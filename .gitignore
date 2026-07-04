@@ -1,0 +1,7 @@
+*.nc
+*.svg
+*.png
+*.csv
+*.txt
+cpu
+gpu
