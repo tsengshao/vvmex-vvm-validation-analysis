@@ -4,5 +4,6 @@
 *.csv
 *.txt
 *.pdf
+.ipynb**
 cpu
 gpu
