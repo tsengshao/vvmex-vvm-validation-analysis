@@ -100,18 +100,20 @@ total_h = total_s / 3600.0
 # ============================================================
 
 baseline_gpu = 8
-baseline_total_s = total_s.loc[baseline_gpu]
-
-speedup = baseline_total_s / total_s
-ideal_speedup = gpus / baseline_gpu
-parallel_efficiency = speedup / ideal_speedup
 
 # CPU reference run.  Its plotting coordinate is intentionally separate from
 # the numeric GPU coordinates so the existing GPU scaling geometry is retained.
-cpu_x = 5
+cpu_x = 2
 cpu_count = 1024
 cpu_total_h = 71.716667
-cpu_speedup = (baseline_total_s / 3600.0) / cpu_total_h
+
+# Speedup is reported relative to the 1024-CPU reference run.  The ideal line
+# is anchored at the measured 8-GPU point and assumes linear GPU scaling from
+# there, so it does not imply equivalence between CPU and GPU resources.
+speedup = cpu_total_h / total_h
+baseline_speedup = speedup.loc[baseline_gpu]
+ideal_speedup = baseline_speedup * (gpus / baseline_gpu)
+cpu_speedup = 1.0
 
 # ============================================================
 # GMD-oriented plot style
@@ -143,8 +145,9 @@ mpl.rcParams.update({
 })
 
 # Okabe-Ito palette: generally robust for common CVD cases.
-runtime_color = "#0072B2"  # blue
-speedup_color = "#D55E00"  # vermilion
+runtime_color = "0.55"  # gray, secondary visual emphasis
+speedup_color = "#7E0000"  # RGB (126, 0, 0)
+speedup_color = np.array((240,120,46))/255
 ideal_color = "0.20"
 
 base_cmap = mpl.colormaps["cividis"]
@@ -222,7 +225,7 @@ gs = fig.add_gridspec(
     nrows=1,
     ncols=2,
     width_ratios=[1.8, 1.0],
-    wspace=0.52,
+    wspace=0.64,
 )
 
 # ============================================================
@@ -256,6 +259,7 @@ point_cpu_runtime, = ax1_top.plot(
 line_runtime, = ax1.plot(
     gpus,
     total_h,
+    linestyle="--",
     marker="o",
     linewidth=1.5,
     markersize=4.2,
@@ -264,7 +268,10 @@ line_runtime, = ax1.plot(
 )
 
 ax1.set_xlabel("Number of GPUs")
-ax1.set_ylabel("Total runtime (h)")
+ax1.set_ylabel("Total runtime (h)", fontsize=9.0)
+ax1.yaxis.set_label_position("left")
+ax1.yaxis.tick_left()
+ax1_top.yaxis.tick_left()
 resource_ticks = np.concatenate(([cpu_x], gpus))
 resource_labels = ["", *[str(gpu) for gpu in gpus]]
 ax1.set_xticks(resource_ticks)
@@ -280,7 +287,7 @@ ax1.annotate(
     fontsize=mpl.rcParams["xtick.labelsize"],
     annotation_clip=False,
 )
-ax1.set_xlim(2, 67)
+ax1.set_xlim(-2, 68)
 ax1_top.set_title("(a) Scaling performance", loc="left", pad=3)
 ax1_top.tick_params(axis="x", which="both", bottom=False, labelbottom=False)
 ax1_top.grid(True, color="0.88", linewidth=0.6)
@@ -290,8 +297,22 @@ ax1_top.set_ylim(70.5, 72.5)
 ax1.set_ylim(0, 19.0)
 ax1.set_yticks(np.arange(0,19.1,2.5))
 
-ax1_top.tick_params(axis="y", labelcolor=runtime_color)
-ax1.tick_params(axis="y", labelcolor=runtime_color)
+ax1_top.tick_params(
+    axis="y",
+    left=True,
+    labelleft=True,
+    right=False,
+    labelright=False,
+    labelcolor=runtime_color,
+)
+ax1.tick_params(
+    axis="y",
+    left=True,
+    labelleft=True,
+    right=False,
+    labelright=False,
+    labelcolor=runtime_color,
+)
 
 # Hide the touching spines and draw conventional broken-axis marks.
 ax1_top.spines["bottom"].set_visible(False)
@@ -325,6 +346,11 @@ ax1.plot(
 
 ax1b = ax1.twinx()
 ax1b.spines["top"].set_visible(False)
+ax1.yaxis.tick_left()
+ax1b.yaxis.set_label_position("right")
+ax1b.yaxis.tick_right()
+ax1b.spines["left"].set_visible(False)
+ax1b.spines["right"].set_visible(True)
 
 line_speedup, = ax1b.plot(
     gpus,
@@ -332,7 +358,7 @@ line_speedup, = ax1b.plot(
     marker="s",
     linewidth=1.5,
     markersize=4.0,
-    linestyle="--",
+    linestyle="-",
     color=speedup_color,
     label="Measured speedup",
 )
@@ -349,6 +375,32 @@ ax1b.plot(
     zorder=4,
 )
 
+
+def speedup_badge_bbox(value):
+    """Scale badge diameter with sqrt(speedup), i.e. area with speedup."""
+    badge_pad = 0.02 + 0.04 * np.sqrt(value)
+    return {
+        "boxstyle": f"circle,pad={badge_pad:.3f}",
+        "facecolor": speedup_color,
+        "edgecolor": "white",
+        "linewidth": 0.5,
+        "alpha": 0.92,
+    }
+
+ax1b.annotate(
+    "1.0×",
+    xy=(cpu_x, cpu_speedup),
+    xytext=(0, 7),
+    textcoords="offset points",
+    ha="center",
+    va="bottom",
+    fontsize=5,
+    fontweight="bold",
+    color="white",
+    bbox=speedup_badge_bbox(cpu_speedup),
+    zorder=6,
+)
+
 line_ideal, = ax1b.plot(
     gpus,
     ideal_speedup,
@@ -358,12 +410,21 @@ line_ideal, = ax1b.plot(
     label="Ideal speedup",
 )
 
-ax1b.set_ylabel("Speedup (8 GPUs = 1)")
-#ax1b.set_ylim(0, ideal_speedup.max() * 1.14)
-# Match the right-axis upper limit to half of the lower runtime-axis limit.
-ax1b.set_yticks([0, 1, 2, 4, 6, 8, 10])
-ax1b.set_ylim(0, ax1.get_ylim()[1] * 2 / 5)
-ax1b.tick_params(axis="y", labelcolor=speedup_color)
+ax1b.set_ylabel("Speedup (relative to 1024 CPUs)",
+        fontsize=9, color=speedup_color, fontweight='bold')
+#ax1b.set_ylim(0, ideal_speedup.max() * 1.12)
+ax1b.set_ylim(0, ax1.get_ylim()[1]*5/2.5)
+ticks = np.concatenate(([1], np.arange(5, 36, 5)))
+ax1b.set_yticks(ticks)
+ax1b.axhline(1, color="0.88", linewidth=0.6, zorder=0)
+ax1b.tick_params(
+    axis="y",
+    left=False,
+    labelleft=False,
+    right=True,
+    labelright=True,
+    labelcolor=speedup_color,
+)
 
 # Keep axis spines neutral. The color coding is only on tick labels and curves.
 for ax in [ax1_top, ax1, ax1b]:
@@ -371,27 +432,41 @@ for ax in [ax1_top, ax1, ax1b]:
         ax.spines[spine].set_color("black")
         ax.spines[spine].set_linewidth(0.7)
 
-# Parallel-efficiency labels; use a space before the percent sign.
-for x, y, eff in zip(gpus, speedup, parallel_efficiency):
-    dx = 20 if x == baseline_gpu else -1
-    dy = -10 if x == baseline_gpu else 5
-    ha = "right" if x == baseline_gpu else "center"
+# Label the measured speedup at each GPU count.
+for x, y in zip(gpus, speedup):
+    # Stay close to the point while occupying the free side of the local line:
+    # below-right for interior points, above-left for the right endpoint.
+    if x == gpus[-1]:
+        offset = (0, 15)
+        horizontal_alignment, vertical_alignment = "center", "bottom"
+    else:
+        offset = (3, -3)
+        horizontal_alignment, vertical_alignment = "left", "top"
+    offset = (0, 15)
+    horizontal_alignment, vertical_alignment = "center", "bottom"
+
     ax1b.annotate(
-        f"{eff * 100:.0f} %",
+        f"{y:.1f}×",
         xy=(x, y),
-        xytext=(dx, dy),
+        xytext=offset,
         textcoords="offset points",
-        ha=ha,
-        va="bottom",
-        fontsize=7.0,
-        color="0.10",
+        ha=horizontal_alignment,
+        va=vertical_alignment,
+        fontsize=6.0,
+        fontweight="bold",
+        color="white",
+        bbox=speedup_badge_bbox(y),
+        zorder=6,
     )
 
 # Legend inside the figure, with explicit symbols and line styles.
 legend = ax1_top.legend(
-    [line_runtime, point_cpu_runtime, line_speedup, line_ideal],
-    ["Wall-clock time", "1024 CPUs", "Measured speedup", "Ideal speedup"],
-    loc="upper right",
+    # [line_runtime, point_cpu_runtime, line_speedup, line_ideal],
+    # ["Wall-clock time", "1024 CPUs", "Measured speedup", "Ideal GPU scaling"],
+    [line_runtime, line_speedup, line_ideal],
+    ["Wall-clock time", "Measured speedup", "Ideal GPU scaling"],
+    loc="upper center",
+    ncol=1,
     frameon=True,
     handlelength=2.6,
     borderpad=0.2,
