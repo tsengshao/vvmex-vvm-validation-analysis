@@ -1,85 +1,44 @@
 *grads -a 1.777777778 -blcx exp_pbl.gs
 'reinit'
+'set cachesf 1000000'
 'reset'
 'set background 1'
 'c'
 
 explab='grass'
-*explab='urban'
-*explab='evergreen'
-
-exp0='pbl_'explab'_aaron_dz200'
-expex=explab'_good_luck'
+explab='urban'
+explab='evergreen'
 
 model='VVM'
-*model='VVMex'
+model='VVMex'
 
 nt=721
+nt=571
 iz0=1
 iz1=16
 inthr=3
 say model' 'explab
 
-'open ../../gpu/'expex'/vvm.ctl'
-'open ../../cpu/'exp0'/gs_ctl_files/dynamic.ctl'
-'open ../../cpu/'exp0'/gs_ctl_files/thermodynamic.ctl'
-'open ../../cpu/'exp0'/gs_ctl_files/surface.ctl'
-'open ../../cpu/'exp0'/gs_ctl_files/radiation.ctl'
-'open ../../cpu/'exp0'/gs_ctl_files/landsurface.ctl'
-
-'set x 1'
-'set y 1'
-'set z 'iz0' 'iz1
-'define wei=rhobar*(lev(z=2)-lev(z=1))'
-
-'set x 1'
-'set y 1'
-'set z 'iz0' 'iz1
-'set t 1 last'
-'define thbvvm=aave(th.3,x=1,x=128,y=1,y=128)'
-'define thbvvmex=aave(th.1,x=1,x=128,y=1,y=128)'
-
-'set z 'iz0
-'define thbvvm0=thbvvm'
-'define thbvvmex0=thbvvmex'
-
-
-'set x 1'
-'set y 1'
-'set z 1'
-'define a=sqrt(mean(pow((thbvvmex-thbvvm)*wei,2),z='iz0',z='iz1'))'
-'define b=sqrt(mean(pow(thbvvm*wei,2),z='iz0',z='iz1'))'
-'define therr=a/maskout(b,b>0.000001)'
-
+'sdfopen ./data/'explab'_VVMex.nc'
+'sdfopen ./data/'explab'_VVM.nc'
+'sdfopen ./data/'explab'_l2.nc'
 
 **** --- fig error
 'c'
 'set x 1'
 'set y 1'
 'set z 1'
-'set t 1 last'
+'set t 1 'nt
 'set grads off'
 'set timelab off'
 'mul 1 1 1 1 -xint 1 -xwid 4.5 -ywid 4'
-'d therr'
+'set vrange 0 8e-4'
+'d thbar_l2.3'
 'draw title relative L2_norm (theta_bar)'
 'gxprint ./fig/ERROR_thbar_'explab'.pdf'
+pull c
 
 **** --- fig 2 --
-'set t 1 last'
-'set z 'iz0' 'iz1
-if (model='VVM')
-'define thb=thbvvm'
-'set z 'iz0
-'define thb0=thbvvm0'
-endif
-if (model='VVMex')
-'define thb=thbvvmex'
-'set z 'iz0
-'define thb0=thbvvmex0'
-endif
-
-pull c
 'c'
 'mul 2 1 1 1 -xint 1 -xwid 4.5 -ywid 4'
 'set vrange 298 316'
@@ -109,56 +68,87 @@ if(inum=1); 'on'; else; 'off'; endif
 hr=subwrd(tlist,inum)
 cnum=subwrd(clist,inum)
 snum=subwrd(slist,inum)
+say inum' 'hr'Z 'cnum' 'snum' 'model
 'set time 'hr'Z'
 'set cthick 10'
 'set cmark 0'
 'set cstyle 'snum
 'set ccolor 'cnum
-'d thb'
+if (model='VVM'); 'd thbar.2'; endif
+if (model='VVMex'); 'd thbar.1'; endif
 inum=inum+1
 endwhile
 
 'legend tl 'num' 5 10 'tlist' 'clist' 'slist
-'draw title (a) 'model' / thbar [K]'
 
-**  'set x 1'
-**  'set y 1'
-**  'set z 'iz0' 'iz1
-**  'set t 1'
-**  it=1
-**  while(it<nt)
-**  if (it=1); 'on'; else; 'off'; endif
-**  'set cmark 0'
-**  'set cthick 10'
-**  'd thb(t='it')'
-**  it=it+30*inthr
-**  endwhile
-**  'draw title thbar, interval 'inthr' hr'
+*X Limits = 0.752 to 5.252
+*Y Limits = 0.8 to 4.8
+** 'set strsiz 0.2'
+** 'set string 1 bl 5 0'
+** 'draw string 0.752 5.0 (a) 'model
+** 'set string 1 br 5 0'
+** 'draw string 5.252 5.0 'explab
+'draw title (a) 'model' / 'explab
 
-'on'
+
+'set strsiz 0.2'
+'set string 1 tc 5 0'
+'draw string 3.002 0.5 THBAR [K]'
+
 'mul 2 1 2 1 -xint 1 -xwid 4.5 -ywid 4'
 'set tlsupp month'
 'set x 1'
 'set y 1'
 'set t 1 'nt
+'set z 'iz0
+'define thbvvmex0=thbar.1'
+'define thbvvm0=thbar.2'
+
+'on'
 'set z 'iz0' 'iz1
+'color 1 15 2 -gxout shaded -kind (255,255,255,0)-(0)->grainbow'
+if (model='VVM')
+  'd qcbar.2*1e6'
+else
+  'd qcbar.1*1e6'
+endif
+'set cthick 5'
+'xcbar 6.4 8.5 4.5 4.7'
+'set strsiz 0.15'
+'set string 1 tl 5 0'
+'draw string 6.4 4.2 'model' qc'
+'draw string 6.4 3.9 [10`a-6`n kg/kg]'
+
+
+'off'
+'set gxout contour'
 'set clevs 0'
 'set clab off'
 'set cthick 10'
 'set ccolor 1'
 'set cstyle 1'
-'d thbvvmex-thbvvmex0-0.5'
+'d thbar.1-thbvvmex0-0.5'
 
 'off'
+'set gxout contour'
 'set clevs 0'
 'set clab off'
 'set cthick 10'
 'set ccolor 1'
 'set cstyle 4'
-'d thbvvm-thbvvm0-0.5'
+'d thbar.2-thbvvm0-0.5'
 
 'legend tr 2 5 10 VVMex VVM 1 1 1 4'
-'draw title (b) PBL height (th_sfc+0.5K)'
+*X Limits = 6.252 to 10.752
+*Y Limits = 0.8 to 4.8
+** 'set strsiz 0.2'
+** 'set string 1 bl 5 0'
+** 'draw string 6.252 5 (b) pbl height'
+** 'set string 1 br 5 0'
+** 'draw string 10.762 5 'explab
+
+'draw title (b) PBL height / 'explab
+
 'draw ylab [m]'
 
 'gxprint ./fig/tg2_'model'_'explab'.pdf'
