@@ -8,6 +8,7 @@
 model='VVMex'
 *model='VVM'
 '! mkdir -p ./fig_'model
+'! mkdir -p ./pdf_'model
 
 if(model='VVMex')
   var='th'
@@ -22,7 +23,8 @@ nz=33
 'set z 1 'nz
 'set x 1 32'
 'set y 16'
-'set lwid 75 5'
+*'set lwid 75 5'
+'set lwid 75 2'
 
 t=1
 while(t<=61)
@@ -53,7 +55,8 @@ ti=(t-1)
 'draw string 1.5 7.3 'model' / 'ti' mins'
 
 itt=math_format( '%06.0f', t)
-'gxprint ./fig_'model'/bubble2d_'model'_'itt'.png white x3000 y2400'
+*'gxprint ./fig_'model'/bubble2d_'model'_'itt'.png white x3000 y2400'
+'gxprint ./pdf_'model'/bubble2d_'model'_'itt'.pdf'
 
 *pull c
 t=t+1

@@ -1,3 +1,5 @@
+
+*16:6 grads -a 2.6666667
 'reinit'
 'set background 1'
 'c'
@@ -39,6 +41,9 @@ varvvm='th.3*wei'
 num=3
 
 'set tlsupp month'
+'set grads off'
+'set timelab off'
+
 'set cthick 10'
 
 'set ccolor 1'
