@@ -3,7 +3,7 @@ set -euo pipefail
 
 SRCDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTDIR="${SRCDIR}/scripts"
-export GASCRP="${GASCRP:+${GASCRP}:}${SCRIPTDIR}/GRADSLIB/"
+export GASCRP="${SCRIPTDIR}/GRADSLIB/:${GASCRP}"
 #python="~/miniforge3/envs/py311/bin/python"
 #export PATH="$(dirname ${python}):$PATH"
 
@@ -14,7 +14,7 @@ Error: 'python' was not found in PATH.
 Create and activate the environment described in environment.yml, then run this
 script again:
   mamba env create -f environment.yml
-  conda activate vvm-vvmex-analysis
+  mamba activate vvm-vvmex-analysis
 
 Alternatively, replace 'mamba' with 'conda' in the first command.
 See README.md for the full setup instructions.
@@ -28,7 +28,7 @@ Error: Python is available, but required analysis packages are missing.
 
 Create or update and activate the project environment:
   mamba env create -f environment.yml
-  conda activate vvm-vvmex-analysis
+  mamba activate vvm-vvmex-analysis
 
 For an existing environment, run:
   mamba env update -f environment.yml
