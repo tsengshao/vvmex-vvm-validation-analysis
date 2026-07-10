@@ -41,7 +41,7 @@ Using [Mamba](https://mamba.readthedocs.io/en/latest/index.html):
 
 ```bash
 mamba env create -f environment.yml
-conda activate vvm-vvmex-analysis
+mamba activate vvm-vvmex-analysis
 ```
 
 Or using Conda:
