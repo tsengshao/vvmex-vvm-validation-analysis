@@ -19,6 +19,8 @@ say model' 'explab
 
 'sdfopen ./data/'explab'_'model'.nc'
 
+'c'
+
 'set x 1'
 'set y 1'
 'set z 1'
