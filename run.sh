@@ -95,7 +95,8 @@ python ${PYROTATE} ./fig/pbl_initial.pdf ${OUTDIR}/fA02.pdf
 python ${PYROTATE} ./fig/tg2_VVMex_urban.pdf ${OUTDIR}/f07ab.pdf
 python ${PYROTATE} ./fig/tg2_VVMex_grass.pdf ${OUTDIR}/f07cd.pdf
 python ${PYROTATE} ./fig/tg2_VVMex_evergreen.pdf ${OUTDIR}/fB04.pdf
-python ${PYROTATE} ./fig/tg_VVMex_grass.pdf ${OUTDIR}/fB03.pdf
+python ${PYROTATE} ./fig/tg_VVMex_grass.pdf ${OUTDIR}/fB03a.pdf
+python ${PYROTATE} ./fig/tg_VVM_grass.pdf ${OUTDIR}/fB03b.pdf
 cd ${SRCDIR}
 
 # fig 8, rcemip

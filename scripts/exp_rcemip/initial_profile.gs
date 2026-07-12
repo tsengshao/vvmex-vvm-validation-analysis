@@ -3,7 +3,7 @@
 'set background 1'
 'c'
 
-title='Weakly forced RCEMIP case'
+title='Weakly forced RCE case'
 'open ../../VVMex/rcemip_0623/vvm.ctl'
 'q file 1'
 line=sublin(result, 5)
