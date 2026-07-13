@@ -39,7 +39,7 @@ nz=99
 
 'set strsiz 0.3'
 'set string 1 c 5 0'
-'draw string 5.75 8 Homogeneous diurnal bounday layer'
+'draw string 5.75 8 Homogeneous diurnal boundary layer'
 
 'gxprint ./fig/pbl_initial.pdf'
 

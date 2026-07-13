@@ -82,7 +82,7 @@ python compare_near_surface.py --case urban
 python compare_near_surface.py --case grass
 opengrads -blcx initial_profile.gs
 cp ./fig/hov_u_surface_ymean_grass_combined.png ${OUTDIR}/f06.png
-cp ./fig/hov_u_surface_ymean_urban_combined.png ${OUTDIR}/fB02.png
+cp ./fig/hov_u_surface_ymean_urban_combined.png ${OUTDIR}/fB01.png
 python ${PYROTATE} ./fig/slm_initial.pdf ${OUTDIR}/fA01.pdf
 cd ${SRCDIR}
 
@@ -94,9 +94,9 @@ opengrads -blcx initial_profile.gs
 python ${PYROTATE} ./fig/pbl_initial.pdf ${OUTDIR}/fA02.pdf
 python ${PYROTATE} ./fig/tg2_VVMex_urban.pdf ${OUTDIR}/f07ab.pdf
 python ${PYROTATE} ./fig/tg2_VVMex_grass.pdf ${OUTDIR}/f07cd.pdf
-python ${PYROTATE} ./fig/tg2_VVMex_evergreen.pdf ${OUTDIR}/fB04.pdf
-python ${PYROTATE} ./fig/tg_VVMex_urban.pdf ${OUTDIR}/fB03a.pdf
-python ${PYROTATE} ./fig/tg_VVM_urban.pdf ${OUTDIR}/fB03b.pdf
+python ${PYROTATE} ./fig/tg2_VVMex_evergreen.pdf ${OUTDIR}/fB03.pdf
+python ${PYROTATE} ./fig/tg_VVMex_urban.pdf ${OUTDIR}/fB02a.pdf
+python ${PYROTATE} ./fig/tg_VVM_urban.pdf ${OUTDIR}/fB02b.pdf
 cd ${SRCDIR}
 
 # fig 8, rcemip
@@ -118,18 +118,8 @@ python performance.py
 cp ./f01_vvm_gpu_timing_gmd.pdf ${OUTDIR}/f09.pdf
 cd ${SRCDIR}
 
-# fig B1, dry warm bubble
-cd "${SCRIPTDIR}/exp_2dbubble"
-opengrads -blcx exp_2dbubble.gs
-opengrads -a 2.6666667 -blcx exp_err_2dbubble.gs
-python ${PYROTATE} ./pdf_VVMex/bubble2d_VVMex_000001.pdf ${OUTDIR}/fB01a.pdf
-python ${PYROTATE} ./pdf_VVMex/bubble2d_VVMex_000011.pdf ${OUTDIR}/fB01b.pdf
-python ${PYROTATE} ./pdf_VVMex/bubble2d_VVMex_000021.pdf ${OUTDIR}/fB01c.pdf
-python ${PYROTATE} ./error_bubble2d.pdf ${OUTDIR}/fB01d.pdf
-cd $SRCDIR
-
-# fig B5, taiwanvvm
+# fig B4, taiwanvvm
 cd "${SCRIPTDIR}/exp_taiwanvvm"
 opengrads -a 1.7777778 -blcx taiwanvvm.gs
-python ${PYROTATE} ./fig/combine_taiwanvvm_2048.pdf ${OUTDIR}/fB05.pdf
+python ${PYROTATE} ./fig/combine_taiwanvvm_2048.pdf ${OUTDIR}/fB04.pdf
 cd $SRCDIR
