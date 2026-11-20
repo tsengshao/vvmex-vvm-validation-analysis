@@ -15,6 +15,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from vvm_readers import CPUReader, GPUReader
+from near_surface import (
+    extract_near_surface,
+    topography_for_variable,
+    validate_topography,
+)
 
 
 DEFAULT_CLEVS = np.arange(-5.0, 5.1, 0.5)
@@ -29,25 +34,6 @@ def build_pwo_colormap() -> mpl.colors.ListedColormap:
         )
     )
     return mpl.colors.ListedColormap(colors, name="pwo")
-
-
-def validate_topography(topo: np.ndarray, shape: tuple[int, ...]) -> np.ndarray:
-    """Validate topography and convert it to indices for a (z, y, x) field."""
-    if topo.shape != shape[1:]:
-        raise ValueError(
-            f"Topography shape {topo.shape} does not match field y/x shape "
-            f"{shape[1:]}"
-        )
-    if not np.all(np.isfinite(topo)) or not np.allclose(topo, np.rint(topo)):
-        raise ValueError("Topography must contain finite integer level indices")
-
-    indices = np.rint(topo).astype(np.intp)
-    if indices.min() < 0 or indices.max() >= shape[0]:
-        raise IndexError(
-            f"Topography indices [{indices.min()}, {indices.max()}] exceed "
-            f"available z indices [0, {shape[0] - 1}]"
-        )
-    return indices
 
 
 def collect_ymean(
@@ -66,6 +52,7 @@ def collect_ymean(
         topo = reader.read_topo()
     else:
         topo = reader.read_2d("topo", steps[0])
+    topo = topography_for_variable(topo, variable)
 
     ymean = np.empty((len(steps), reader.x.size), dtype=np.float64)
     times_minutes = np.empty(len(steps), dtype=np.float64)
@@ -75,9 +62,7 @@ def collect_ymean(
         field = reader.read_3d(variable, step)
         if topo_indices is None:
             topo_indices = validate_topography(topo, field.shape)
-        surface = np.take_along_axis(
-            field, topo_indices[None, :, :], axis=0
-        )[0]
+        surface = extract_near_surface(field, topo_indices)
         ymean[index] = np.mean(surface, axis=0, dtype=np.float64)
         times_minutes[index] = reader.time_minutes(step)
 

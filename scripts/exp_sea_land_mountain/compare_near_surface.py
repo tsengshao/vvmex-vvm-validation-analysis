@@ -16,6 +16,11 @@ import numpy as np
 import xarray as xr
 
 from vvm_readers import CPUReader, GPUReader
+from near_surface import (
+    extract_near_surface,
+    topography_for_variable,
+    validate_topography,
+)
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -36,6 +41,11 @@ DEFAULT_CACHE_DIR = ROOT_DIR / "DATA/exp_sea_land_mountain"
 FIELD_CLEVS = np.arange(-5.0, 5.1, 0.5)
 DIFFERENCE_CLEVS = np.arange(0, 1.1, 0.1)
 RELATIVE_ERROR_MIN_REFERENCE = 1.0e-6
+SURFACE_SAMPLING = "periodic_staggered_topo_no_z_offset_v1"
+
+
+class OutdatedSurfaceCacheError(ValueError):
+    """A comparison cache predates the current surface sampling method."""
 
 
 def build_pwo_colormap() -> mpl.colors.ListedColormap:
@@ -49,32 +59,6 @@ def build_pwo_colormap() -> mpl.colors.ListedColormap:
         )
     )
     return mpl.colors.ListedColormap(colors, name="pwo")
-
-
-def validate_topography(topo: np.ndarray, field_shape: tuple[int, ...]) -> np.ndarray:
-    """Validate and return topography as integer indices into a (z, y, x) field."""
-    if topo.shape != field_shape[1:]:
-        raise ValueError(
-            f"Topography shape {topo.shape} does not match field y/x shape "
-            f"{field_shape[1:]}"
-        )
-    if not np.all(np.isfinite(topo)):
-        raise ValueError("Topography contains non-finite values")
-    if not np.allclose(topo, np.rint(topo)):
-        raise ValueError("Topography contains non-integer level indices")
-
-    indices = np.rint(topo).astype(np.intp)
-    if indices.min() < 0 or indices.max() >= field_shape[0]:
-        raise IndexError(
-            f"Topography indices [{indices.min()}, {indices.max()}] exceed "
-            f"available z indices [0, {field_shape[0] - 1}]"
-        )
-    return indices
-
-
-def extract_near_surface(field: np.ndarray, topo_indices: np.ndarray) -> np.ndarray:
-    """Select field[topo[y, x], y, x] for every horizontal grid cell."""
-    return np.take_along_axis(field, topo_indices[None, :, :], axis=0)[0]
 
 
 def common_steps(cpu: CPUReader, gpu: GPUReader, max_times: int | None) -> list[int]:
@@ -103,6 +87,9 @@ def collect_comparison(
     #         f"{mismatch} cells; VVM topo is still used for both fields."
     #     )
     #     sys.exit()
+
+    # Retain the common CPU topography used for comparing both normalized fields.
+    topo = topography_for_variable(topo, variable)
 
     nt = len(steps)
     nx = topo.shape[1]
@@ -220,6 +207,7 @@ def comparison_to_dataset(
         },
         attrs={
             "variable": variable,
+            "surface_sampling": SURFACE_SAMPLING,
             "vvm_case": str(vvm_case.resolve()),
             "vvmex_case": str(vvmex_case.resolve()),
             "max_times": "" if max_times is None else str(max_times),
@@ -249,6 +237,11 @@ def dataset_to_comparison(
         raise ValueError(
             f"Cache variable mismatch: cache has {cached_variable!r}, "
             f"but --variable is {variable!r}"
+        )
+
+    if dataset.attrs.get("surface_sampling") != SURFACE_SAMPLING:
+        raise OutdatedSurfaceCacheError(
+            "Cache does not use the current topou/topov/topow sampling method"
         )
 
     comparison = {
@@ -509,13 +502,17 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Case: {label}")
+    comparison = None
     if cache_path.exists():
-        comparison, x_m = load_cached_comparison(cache_path, args.variable)
-    else:
+        try:
+            comparison, x_m = load_cached_comparison(cache_path, args.variable)
+        except OutdatedSurfaceCacheError:
+            print("Surface sampling changed; recomputing the comparison cache.")
+    if comparison is None:
         cpu_case, gpu_case = resolve_case_paths(args)
         if args.cpu_case is not None or args.gpu_case is not None:
             label = case_label(cpu_case, gpu_case)
-        print(f"Cache not found; computing comparison: {cache_path}")
+        print(f"Computing comparison: {cache_path}")
         print(f"VVM case: {cpu_case.resolve()}")
         print(f"VVMex case: {gpu_case.resolve()}")
         cpu = CPUReader(cpu_case)
